@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: plant-monitor
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server.server:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: API_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+    healthCheckPath: /api/health
