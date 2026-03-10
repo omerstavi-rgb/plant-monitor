@@ -250,6 +250,71 @@
         .no-data .icon { font-size: 3em; margin-bottom: 16px; }
         .no-data h3 { margin-bottom: 8px; color: var(--text); }
 
+        .battery-indicator {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px; border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            font-size: 0.85em; margin-top: 10px;
+        }
+        .battery-bar {
+            width: 28px; height: 14px;
+            border: 2px solid var(--text-dim);
+            border-radius: 3px; position: relative;
+            display: inline-block;
+        }
+        .battery-bar::after {
+            content: ''; position: absolute;
+            right: -5px; top: 3px;
+            width: 3px; height: 6px;
+            background: var(--text-dim);
+            border-radius: 0 2px 2px 0;
+        }
+        .battery-fill {
+            height: 100%; border-radius: 1px;
+            transition: width 0.3s;
+        }
+
+        .plant-control {
+            margin-top: 8px; padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+        }
+        .plant-control label {
+            color: var(--text-dim); font-size: 0.85em; white-space: nowrap;
+        }
+        .plant-search-wrapper {
+            position: relative; margin-top: 6px;
+        }
+        .plant-search-input {
+            width: 100%; padding: 8px 12px;
+            background: var(--bg); color: var(--text);
+            border: 1px solid var(--card-border); border-radius: 8px;
+            font-size: 0.9em;
+        }
+        .plant-search-input:focus { outline: none; border-color: var(--accent); }
+        .plant-search-results {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--card); border: 1px solid var(--card-border);
+            border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto;
+            z-index: 100; display: none;
+        }
+        .plant-search-results.show { display: block; }
+        .plant-result-item {
+            padding: 8px 12px; cursor: pointer; font-size: 0.85em;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .plant-result-item:hover { background: rgba(255,255,255,0.08); }
+        .plant-result-item .plant-name { font-weight: 600; }
+        .plant-result-item .plant-info { color: var(--text-dim); font-size: 0.8em; margin-top: 2px; }
+        .plant-current {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.9em; font-weight: 600; color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .plant-tip {
+            font-size: 0.8em; color: var(--text-dim); margin-top: 4px;
+        }
+
         .footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.85em; }
 
         @media (max-width: 768px) {
@@ -337,12 +402,23 @@
     let moistureChart = null;
     let currentView = 'table';
     let lastReadings = [];
+    let plantTypes = [];
 
     document.addEventListener('DOMContentLoaded', () => {
         initChart();
+        fetchPlantTypes();
         fetchDevices();
         setInterval(fetchDevices, REFRESH_INTERVAL);
     });
+
+    async function fetchPlantTypes() {
+        try {
+            const res = await fetch(`${API_BASE}/api/plants`);
+            plantTypes = await res.json();
+        } catch (err) {
+            console.error('Error fetching plants:', err);
+        }
+    }
 
     // ===================== API =====================
     async function fetchDevices() {
@@ -400,6 +476,19 @@
                 : 'לא ידוע';
             const isSelected = device.device_id === selectedDevice;
 
+            // סוללה (-1 = Power Bank, null = אין נתון)
+            const battery = device.battery_percent;
+            const isPowerBank = battery === -1;
+            const batteryColor = isPowerBank ? '#42a5f5' : battery == null ? '#7a8f9f' : battery > 50 ? '#4caf50' : battery > 20 ? '#ffc107' : '#f44336';
+            const batteryText = isPowerBank ? 'מחובר לחשמל' : battery != null ? `${battery}%` : 'לא ידוע';
+            const batteryWidth = isPowerBank ? 100 : battery != null ? Math.max(2, battery) : 0;
+
+            // סוג צמח
+            const currentPlant = device.plant_type || 'ficus_benjamina';
+            const plantInfo = plantTypes.find(p => p.id === currentPlant);
+            const plantName = plantInfo ? `${plantInfo.name_he} (${plantInfo.name_en})` : currentPlant;
+            const plantTip = plantInfo ? plantInfo.water_tip_he : '';
+
             return `
                 <div class="device-card ${isSelected ? 'selected' : ''}"
                      onclick="selectDevice(${device.device_id})">
@@ -421,8 +510,28 @@
                         ${statusInfo.text}
                     </div>
 
+                    <div class="battery-indicator" onclick="event.stopPropagation()">
+                        <div class="battery-bar">
+                            <div class="battery-fill" style="width:${batteryWidth}%; background:${batteryColor}"></div>
+                        </div>
+                        <span style="color:${batteryColor}; font-weight:600;">${isPowerBank ? '🔌' : '🔋'} ${batteryText}</span>
+                    </div>
+
+                    <div class="plant-control" onclick="event.stopPropagation()">
+                        <div class="plant-current">🌱 ${plantName}</div>
+                        ${plantTip ? `<div class="plant-tip">💧 ${plantTip}</div>` : ''}
+                        <div class="plant-search-wrapper">
+                            <input type="text" class="plant-search-input"
+                                   placeholder="חפש צמח..."
+                                   oninput="searchPlant(${device.device_id}, this)"
+                                   onfocus="searchPlant(${device.device_id}, this)"
+                                   onblur="setTimeout(()=>closePlantSearch(this), 200)">
+                            <div class="plant-search-results" id="plantResults_${device.device_id}"></div>
+                        </div>
+                    </div>
+
                     <div class="interval-control" onclick="event.stopPropagation()">
-                        <label>מדידה כל:</label>
+                        <label>⏱ מדידה כל:</label>
                         <select class="interval-select" onchange="changeInterval(${device.device_id}, this.value)">
                             <option value="5" ${(device.interval_minutes||30)==5?'selected':''}>5 דקות</option>
                             <option value="10" ${(device.interval_minutes||30)==10?'selected':''}>10 דקות</option>
@@ -446,8 +555,8 @@
                             <div class="value">${lastSeen}</div>
                         </div>
                         <div class="meta-item">
-                            <div class="label">סף התראה</div>
-                            <div class="value">${device.moisture_threshold_low ?? 30}%</div>
+                            <div class="label">סף לחות</div>
+                            <div class="value">${device.moisture_threshold_low ?? 30}% - ${device.moisture_threshold_high ?? 70}%</div>
                         </div>
                         <div class="meta-item">
                             <div class="label">מדידה הבאה</div>
@@ -541,6 +650,56 @@
         document.querySelectorAll('.tab-buttons .tab-btn').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
         if (selectedDevice) fetchReadings(selectedDevice);
+    }
+
+    function searchPlant(deviceId, input) {
+        const query = input.value.trim().toLowerCase();
+        const resultsDiv = document.getElementById(`plantResults_${deviceId}`);
+
+        // סינון מהמאגר המקומי (כבר טעון)
+        let filtered = plantTypes;
+        if (query.length > 0) {
+            filtered = plantTypes.filter(p =>
+                p.name_he.toLowerCase().includes(query) ||
+                p.name_en.toLowerCase().includes(query) ||
+                p.id.toLowerCase().includes(query)
+            );
+        }
+
+        // הצגת עד 15 תוצאות
+        const shown = filtered.slice(0, 15);
+        resultsDiv.innerHTML = shown.map(p => `
+            <div class="plant-result-item" onmousedown="selectPlant(${deviceId}, '${p.id}')">
+                <div class="plant-name">${p.name_he} (${p.name_en})</div>
+                <div class="plant-info">לחות: ${p.moisture_min}%-${p.moisture_max}% | ${p.water_tip_he}</div>
+            </div>
+        `).join('');
+
+        if (shown.length === 0 && query.length > 0) {
+            resultsDiv.innerHTML = '<div class="plant-result-item"><div class="plant-info">לא נמצא - נסה שם אחר</div></div>';
+        }
+
+        resultsDiv.classList.add('show');
+    }
+
+    function closePlantSearch(input) {
+        const wrapper = input.closest('.plant-search-wrapper');
+        const resultsDiv = wrapper.querySelector('.plant-search-results');
+        resultsDiv.classList.remove('show');
+        input.value = '';
+    }
+
+    async function selectPlant(deviceId, plantId) {
+        try {
+            await fetch(`${API_BASE}/api/device/${deviceId}/plant`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plant_type: plantId })
+            });
+            fetchDevices();
+        } catch (err) {
+            console.error('Error changing plant type:', err);
+        }
     }
 
     async function changeInterval(deviceId, minutes) {
