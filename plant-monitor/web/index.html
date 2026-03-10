@@ -189,6 +189,43 @@
             margin-top: 2px;
         }
 
+        .measure-btn {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            background: rgba(38,166,154,0.1);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .measure-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .measure-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .measure-btn.waiting {
+            border-color: var(--yellow);
+            color: var(--yellow);
+            background: rgba(255,193,7,0.1);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
         .water-status {
             text-align: center;
             margin-top: 16px;
@@ -435,6 +472,11 @@
                         ${statusInfo.text}
                     </div>
 
+                    <button class="measure-btn" id="measureBtn_${device.device_id}"
+                            onclick="event.stopPropagation(); requestMeasurement(${device.device_id})">
+                        📡 מדידה עכשיו
+                    </button>
+
                     <div class="device-meta">
                         <div class="meta-item">
                             <div class="label">מתח</div>
@@ -612,6 +654,49 @@
         if (moisture < low) return { text: '💧 צריך השקיה!', class: 'needs-water' };
         if (moisture > high) return { text: '💦 רטוב מאוד', class: 'wet' };
         return { text: '✅ לחות תקינה', class: 'ok' };
+    }
+
+    async function requestMeasurement(deviceId) {
+        const btn = document.getElementById(`measureBtn_${deviceId}`);
+        btn.disabled = true;
+        btn.className = 'measure-btn waiting';
+        btn.textContent = '⏳ ממתין למדידה...';
+
+        try {
+            await fetch(`${API_BASE}/api/command/${deviceId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: 'measure' })
+            });
+
+            // בדיקה כל 5 שניות אם הגיעו נתונים חדשים
+            let checks = 0;
+            const maxChecks = 24; // 2 דקות מקסימום
+            const checker = setInterval(async () => {
+                checks++;
+                await fetchDevices();
+
+                if (checks >= maxChecks) {
+                    clearInterval(checker);
+                    btn.disabled = false;
+                    btn.className = 'measure-btn';
+                    btn.textContent = '📡 מדידה עכשיו';
+                }
+            }, 5000);
+
+            // גם אם לא הגיע - אחרי 2 דקות מחזירים את הכפתור
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.className = 'measure-btn';
+                btn.textContent = '📡 מדידה עכשיו';
+            }, 120000);
+
+        } catch (err) {
+            console.error('Error requesting measurement:', err);
+            btn.disabled = false;
+            btn.className = 'measure-btn';
+            btn.textContent = '📡 מדידה עכשיו';
+        }
     }
 
     function timeAgo(date) {
