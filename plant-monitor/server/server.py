@@ -18,6 +18,7 @@ from datetime import datetime
 import sqlite3
 import os
 import json
+from plant_types import get_all_plants, get_plant_by_id, search_plants
 
 # ===================== הגדרות =====================
 app = Flask(__name__, static_folder='../web')
@@ -73,7 +74,9 @@ def init_db():
             last_seen DATETIME,
             moisture_threshold_low INTEGER DEFAULT 30,
             moisture_threshold_high INTEGER DEFAULT 70,
-            interval_minutes INTEGER DEFAULT 30
+            interval_minutes INTEGER DEFAULT 30,
+            plant_type TEXT DEFAULT 'ficus',
+            battery_percent INTEGER DEFAULT NULL
         )
     ''')
     conn.commit()
@@ -119,17 +122,20 @@ def receive_data():
             data.get('sleep_minutes')
         ))
 
-        # עדכון/יצירת מכשיר
+        # עדכון/יצירת מכשיר (כולל אחוז סוללה)
+        battery = data.get('battery_percent')
         conn.execute('''
-            INSERT INTO devices (device_id, device_name, last_seen)
-            VALUES (?, ?, ?)
+            INSERT INTO devices (device_id, device_name, last_seen, battery_percent)
+            VALUES (?, ?, ?, ?)
             ON CONFLICT(device_id) DO UPDATE SET
                 device_name = excluded.device_name,
-                last_seen = excluded.last_seen
+                last_seen = excluded.last_seen,
+                battery_percent = excluded.battery_percent
         ''', (
             data.get('device_id'),
             data.get('device_name'),
-            datetime.now().isoformat()
+            datetime.now().isoformat(),
+            battery
         ))
 
         conn.commit()
@@ -268,6 +274,10 @@ def update_settings(device_id):
         conn.execute('UPDATE devices SET moisture_threshold_high = ? WHERE device_id = ?',
                       (data['threshold_high'], device_id))
 
+    if 'plant_type' in data:
+        conn.execute('UPDATE devices SET plant_type = ? WHERE device_id = ?',
+                      (data['plant_type'], device_id))
+
     conn.commit()
     conn.close()
     return jsonify({'status': 'ok'})
@@ -312,6 +322,39 @@ def send_command(device_id):
     conn.close()
 
     return jsonify({'status': 'ok', 'message': f'Command "{command}" queued'})
+
+
+@app.route('/api/plants', methods=['GET'])
+def get_plants():
+    """רשימת כל סוגי הצמחים, עם אפשרות חיפוש"""
+    query = request.args.get('q', '')
+    if query:
+        return jsonify(search_plants(query))
+    return jsonify(get_all_plants())
+
+
+@app.route('/api/device/<int:device_id>/plant', methods=['POST'])
+def set_plant_type(device_id):
+    """עדכון סוג צמח למכשיר"""
+    data = request.get_json()
+    plant_id = data.get('plant_type', 'ficus')
+
+    plant = get_plant_by_id(plant_id)
+    if not plant:
+        return jsonify({'error': 'Unknown plant type'}), 400
+
+    conn = get_db()
+    conn.execute('''
+        UPDATE devices SET
+            plant_type = ?,
+            moisture_threshold_low = ?,
+            moisture_threshold_high = ?
+        WHERE device_id = ?
+    ''', (plant_id, plant['moisture_min'], plant['moisture_max'], device_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'ok', 'plant': plant})
 
 
 @app.route('/api/health', methods=['GET'])
