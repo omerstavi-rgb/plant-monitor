@@ -58,6 +58,15 @@ def init_db():
         )
     ''')
     conn.execute('''
+        CREATE TABLE IF NOT EXISTS commands (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id INTEGER NOT NULL,
+            command TEXT DEFAULT 'measure',
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS devices (
             device_id INTEGER PRIMARY KEY,
             device_name TEXT,
@@ -218,6 +227,47 @@ def set_threshold(device_id):
     conn.close()
 
     return jsonify({'status': 'ok'})
+
+
+@app.route('/api/command/<int:device_id>', methods=['GET'])
+def get_command(device_id):
+    """ESP32 בודק אם יש פקודות ממתינות"""
+    if not verify_api_key():
+        return jsonify({'error': 'Invalid API key'}), 401
+
+    conn = get_db()
+    cmd = conn.execute('''
+        SELECT * FROM commands
+        WHERE device_id = ? AND status = 'pending'
+        ORDER BY created_at ASC LIMIT 1
+    ''', (device_id,)).fetchone()
+
+    if cmd:
+        conn.execute('UPDATE commands SET status = ? WHERE id = ?',
+                      ('done', cmd['id']))
+        conn.commit()
+        conn.close()
+        return jsonify({'command': cmd['command'], 'id': cmd['id']})
+
+    conn.close()
+    return jsonify({'command': None})
+
+
+@app.route('/api/command/<int:device_id>', methods=['POST'])
+def send_command(device_id):
+    """שליחת פקודה למכשיר (מהדשבורד)"""
+    data = request.get_json()
+    command = data.get('command', 'measure')
+
+    conn = get_db()
+    conn.execute('''
+        INSERT INTO commands (device_id, command, status, created_at)
+        VALUES (?, ?, 'pending', ?)
+    ''', (device_id, command, datetime.now().isoformat()))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'ok', 'message': f'Command "{command}" queued'})
 
 
 @app.route('/api/health', methods=['GET'])
