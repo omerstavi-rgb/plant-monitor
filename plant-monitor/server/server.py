@@ -72,7 +72,8 @@ def init_db():
             device_name TEXT,
             last_seen DATETIME,
             moisture_threshold_low INTEGER DEFAULT 30,
-            moisture_threshold_high INTEGER DEFAULT 70
+            moisture_threshold_high INTEGER DEFAULT 70,
+            interval_minutes INTEGER DEFAULT 30
         )
     ''')
     conn.commit()
@@ -152,7 +153,7 @@ def get_devices():
     """רשימת כל המכשירים"""
     conn = get_db()
     devices = conn.execute('''
-        SELECT d.*,
+        SELECT d.*, d.interval_minutes,
                r.moisture_percent as last_moisture,
                r.moisture_raw as last_raw,
                r.voltage as last_voltage,
@@ -226,6 +227,49 @@ def set_threshold(device_id):
     conn.commit()
     conn.close()
 
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/api/device/<int:device_id>/settings', methods=['GET'])
+def get_settings(device_id):
+    """ESP32 מקבל הגדרות (תדירות מדידה וכו')"""
+    conn = get_db()
+    device = conn.execute(
+        'SELECT * FROM devices WHERE device_id = ?', (device_id,)
+    ).fetchone()
+    conn.close()
+
+    if device:
+        return jsonify({
+            'interval_minutes': device['interval_minutes'] or 30,
+            'threshold_low': device['moisture_threshold_low'] or 30,
+            'threshold_high': device['moisture_threshold_high'] or 70
+        })
+
+    return jsonify({'interval_minutes': 30, 'threshold_low': 30, 'threshold_high': 70})
+
+
+@app.route('/api/device/<int:device_id>/settings', methods=['POST'])
+def update_settings(device_id):
+    """עדכון הגדרות מהדשבורד"""
+    data = request.get_json()
+    conn = get_db()
+
+    if 'interval_minutes' in data:
+        interval = max(1, min(1440, int(data['interval_minutes'])))
+        conn.execute('UPDATE devices SET interval_minutes = ? WHERE device_id = ?',
+                      (interval, device_id))
+
+    if 'threshold_low' in data:
+        conn.execute('UPDATE devices SET moisture_threshold_low = ? WHERE device_id = ?',
+                      (data['threshold_low'], device_id))
+
+    if 'threshold_high' in data:
+        conn.execute('UPDATE devices SET moisture_threshold_high = ? WHERE device_id = ?',
+                      (data['threshold_high'], device_id))
+
+    conn.commit()
+    conn.close()
     return jsonify({'status': 'ok'})
 
 
