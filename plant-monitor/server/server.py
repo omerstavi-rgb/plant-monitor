@@ -18,7 +18,7 @@ from datetime import datetime
 import sqlite3
 import os
 import json
-from plant_types import get_all_plants, get_plant_by_id, search_plants
+from server.plant_types import get_all_plants, get_plant_by_id, search_plants
 
 # ===================== הגדרות =====================
 app = Flask(__name__, static_folder='../web')
