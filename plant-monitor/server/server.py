@@ -18,7 +18,13 @@ from datetime import datetime
 import sqlite3
 import os
 import json
+import requests as http_requests
 from server.plant_types import get_all_plants, get_plant_by_id, search_plants
+
+# PlantNet API - חינמי, עד 500 זיהויים ביום
+# הרשם ב-https://my.plantnet.org/ וקבל מפתח
+PLANTNET_API_KEY = os.environ.get('PLANTNET_API_KEY', '2b10placeholder')
+PLANTNET_API_URL = "https://my-api.plantnet.org/v2/identify/all"
 
 # ===================== הגדרות =====================
 app = Flask(__name__, static_folder='../web')
@@ -77,6 +83,21 @@ def init_db():
             interval_minutes INTEGER DEFAULT 30,
             plant_type TEXT DEFAULT 'ficus',
             battery_percent INTEGER DEFAULT NULL
+        )
+    ''')
+    # טבלת צמחים מותאמים אישית (שנוספו ע"י המשתמש)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS custom_plants (
+            id TEXT PRIMARY KEY,
+            name_he TEXT NOT NULL,
+            name_en TEXT NOT NULL,
+            category TEXT DEFAULT 'medium',
+            moisture_min INTEGER DEFAULT 30,
+            moisture_max INTEGER DEFAULT 70,
+            temp_min INTEGER DEFAULT 15,
+            temp_max INTEGER DEFAULT 30,
+            water_tip_he TEXT DEFAULT '',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
@@ -326,11 +347,110 @@ def send_command(device_id):
 
 @app.route('/api/plants', methods=['GET'])
 def get_plants():
-    """רשימת כל סוגי הצמחים, עם אפשרות חיפוש"""
+    """רשימת כל סוגי הצמחים (מובנים + מותאמים אישית), עם אפשרות חיפוש"""
     query = request.args.get('q', '')
+
+    # שליפת צמחים מותאמים אישית מה-DB
+    conn = get_db()
+    custom_rows = conn.execute('SELECT * FROM custom_plants ORDER BY name_he').fetchall()
+    conn.close()
+    custom_plants = [dict(r) for r in custom_rows]
+    # הסר שדה created_at מהתוצאה
+    for p in custom_plants:
+        p.pop('created_at', None)
+        p['custom'] = True  # סימון שזה צמח מותאם אישית
+
     if query:
-        return jsonify(search_plants(query))
-    return jsonify(get_all_plants())
+        builtin = search_plants(query)
+        # חיפוש גם בצמחים מותאמים
+        q = query.lower().strip()
+        custom_filtered = [p for p in custom_plants if
+                           q in p.get('name_he', '').lower() or
+                           q in p.get('name_en', '').lower() or
+                           q in p.get('id', '').lower()]
+        return jsonify(builtin + custom_filtered)
+
+    return jsonify(get_all_plants() + custom_plants)
+
+
+@app.route('/api/plants/custom', methods=['POST'])
+def add_custom_plant():
+    """הוספת צמח מותאם אישית למאגר"""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data'}), 400
+
+    name_he = data.get('name_he', '').strip()
+    name_en = data.get('name_en', '').strip()
+    if not name_he and not name_en:
+        return jsonify({'error': 'Plant name required'}), 400
+
+    # יצירת ID מהשם האנגלי או העברי
+    base_name = name_en if name_en else name_he
+    plant_id = data.get('id') or base_name.lower().replace(' ', '_').replace('-', '_')
+    # הסר תווים לא חוקיים
+    plant_id = ''.join(c for c in plant_id if c.isalnum() or c == '_')
+    plant_id = f"custom_{plant_id}"
+
+    # בדוק שלא קיים כבר
+    existing = get_plant_by_id(plant_id)
+    if existing:
+        return jsonify({'error': 'Plant already exists', 'plant': existing}), 409
+
+    moisture_min = max(0, min(100, int(data.get('moisture_min', 30))))
+    moisture_max = max(moisture_min, min(100, int(data.get('moisture_max', 70))))
+
+    # קביעת קטגוריה אוטומטית לפי טווח לחות
+    avg_moisture = (moisture_min + moisture_max) / 2
+    if avg_moisture < 35:
+        category = 'low'
+    elif avg_moisture < 55:
+        category = 'medium'
+    else:
+        category = 'high'
+
+    plant = {
+        'id': plant_id,
+        'name_he': name_he or name_en,
+        'name_en': name_en or name_he,
+        'category': data.get('category', category),
+        'moisture_min': moisture_min,
+        'moisture_max': moisture_max,
+        'temp_min': int(data.get('temp_min', 15)),
+        'temp_max': int(data.get('temp_max', 30)),
+        'water_tip_he': data.get('water_tip_he', f'לחות מומלצת: {moisture_min}%-{moisture_max}%'),
+    }
+
+    conn = get_db()
+    try:
+        conn.execute('''
+            INSERT INTO custom_plants (id, name_he, name_en, category, moisture_min, moisture_max, temp_min, temp_max, water_tip_he)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (plant['id'], plant['name_he'], plant['name_en'], plant['category'],
+              plant['moisture_min'], plant['moisture_max'], plant['temp_min'], plant['temp_max'],
+              plant['water_tip_he']))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Plant ID already exists'}), 409
+    conn.close()
+
+    plant['custom'] = True
+    return jsonify({'status': 'ok', 'plant': plant}), 201
+
+
+@app.route('/api/plants/custom/<plant_id>', methods=['DELETE'])
+def delete_custom_plant(plant_id):
+    """מחיקת צמח מותאם אישית"""
+    conn = get_db()
+    result = conn.execute('DELETE FROM custom_plants WHERE id = ?', (plant_id,))
+    conn.commit()
+    deleted = result.rowcount > 0
+    conn.close()
+
+    if deleted:
+        return jsonify({'status': 'ok'})
+    return jsonify({'error': 'Plant not found'}), 404
 
 
 @app.route('/api/device/<int:device_id>/plant', methods=['POST'])
@@ -339,7 +459,18 @@ def set_plant_type(device_id):
     data = request.get_json()
     plant_id = data.get('plant_type', 'ficus')
 
+    # חיפוש במאגר המובנה
     plant = get_plant_by_id(plant_id)
+
+    # אם לא נמצא - חיפוש במאגר המותאם אישית
+    if not plant:
+        conn = get_db()
+        row = conn.execute('SELECT * FROM custom_plants WHERE id = ?', (plant_id,)).fetchone()
+        conn.close()
+        if row:
+            plant = dict(row)
+            plant.pop('created_at', None)
+
     if not plant:
         return jsonify({'error': 'Unknown plant type'}), 400
 
@@ -355,6 +486,80 @@ def set_plant_type(device_id):
     conn.close()
 
     return jsonify({'status': 'ok', 'plant': plant})
+
+
+@app.route('/api/identify', methods=['POST'])
+def identify_plant():
+    """זיהוי צמח מתמונה באמצעות PlantNet API"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image uploaded'}), 400
+
+        image = request.files['image']
+
+        # שליחה ל-PlantNet API
+        response = http_requests.post(
+            PLANTNET_API_URL,
+            files={'images': (image.filename, image.read(), image.content_type)},
+            data={
+                'organs': 'leaf',  # ברירת מחדל - זיהוי לפי עלה
+            },
+            params={
+                'api-key': PLANTNET_API_KEY,
+                'include-related-images': 'false',
+                'no-reject': 'false',
+                'lang': 'he',
+            },
+            timeout=30
+        )
+
+        if response.status_code != 200:
+            return jsonify({
+                'error': 'PlantNet API error',
+                'status': response.status_code,
+                'message': response.text
+            }), 500
+
+        result = response.json()
+        results_list = result.get('results', [])
+
+        if not results_list:
+            return jsonify({'error': 'No plant identified', 'suggestions': []}), 200
+
+        # עיבוד תוצאות - חיפוש במאגר המקומי
+        suggestions = []
+        for r in results_list[:5]:  # עד 5 תוצאות
+            species = r.get('species', {})
+            scientific_name = species.get('scientificNameWithoutAuthor', '')
+            common_names = species.get('commonNames', [])
+            score = r.get('score', 0)
+
+            # חיפוש במאגר המקומי
+            local_match = None
+            search_terms = [scientific_name] + common_names
+            for term in search_terms:
+                if term:
+                    matches = search_plants(term)
+                    if matches:
+                        local_match = matches[0]
+                        break
+
+            suggestions.append({
+                'scientific_name': scientific_name,
+                'common_names': common_names,
+                'score': round(score * 100, 1),
+                'local_match': local_match
+            })
+
+        return jsonify({
+            'status': 'ok',
+            'suggestions': suggestions,
+            'best_match': suggestions[0] if suggestions else None
+        })
+
+    except Exception as e:
+        print(f"Identify error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/health', methods=['GET'])

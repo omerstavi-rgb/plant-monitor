@@ -315,6 +315,187 @@
             font-size: 0.8em; color: var(--text-dim); margin-top: 4px;
         }
 
+        .camera-btn {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            width: 100%; padding: 8px; margin-top: 6px;
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            color: white; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 0.85em; font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .camera-btn:hover { opacity: 0.85; }
+        .camera-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .camera-input { display: none; }
+
+        .identify-modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .identify-modal.show { display: flex; }
+        .identify-content {
+            background: var(--card); border-radius: 16px;
+            padding: 24px; max-width: 420px; width: 90%;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .identify-content h3 { margin-bottom: 16px; text-align: center; }
+        .identify-result {
+            padding: 12px; border-radius: 10px; margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--card-border);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .identify-result:hover { border-color: var(--accent); background: rgba(38,166,154,0.1); }
+        .identify-result .result-name { font-weight: 600; font-size: 1em; }
+        .identify-result .result-common { color: var(--text-dim); font-size: 0.85em; }
+        .identify-result .result-score {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 0.75em; font-weight: 600; margin-top: 4px;
+        }
+        .identify-result .result-match {
+            color: var(--accent); font-size: 0.85em; margin-top: 4px;
+        }
+        .identify-loading { text-align: center; padding: 40px; color: var(--text-dim); }
+        .identify-close {
+            display: block; width: 100%; padding: 10px; margin-top: 12px;
+            background: rgba(255,255,255,0.1); color: var(--text);
+            border: 1px solid var(--card-border); border-radius: 8px;
+            cursor: pointer; font-size: 0.9em;
+        }
+
+        /* ===================== ספריית צמחים ===================== */
+        .library-search {
+            display: flex; gap: 10px; margin-bottom: 16px;
+            flex-wrap: wrap; align-items: center;
+        }
+        .library-search input {
+            flex: 1; min-width: 200px; padding: 10px 14px;
+            background: var(--bg); color: var(--text);
+            border: 1px solid var(--card-border); border-radius: 10px;
+            font-size: 0.95em;
+        }
+        .library-search input:focus { outline: none; border-color: var(--accent); }
+        .library-filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 6px 14px; border-radius: 8px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+            color: var(--text-dim); cursor: pointer; font-size: 0.8em;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.1); }
+        .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .plant-library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px; max-height: 500px; overflow-y: auto;
+            padding: 4px;
+        }
+        .plant-library-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 14px;
+            transition: all 0.2s;
+        }
+        .plant-library-card:hover {
+            border-color: var(--accent);
+            background: rgba(38,166,154,0.05);
+        }
+        .plant-library-card.custom-plant {
+            border-color: rgba(255,193,7,0.3);
+        }
+        .plant-card-header {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 8px;
+        }
+        .plant-card-name { font-weight: 600; font-size: 0.95em; }
+        .plant-card-name-en { color: var(--text-dim); font-size: 0.8em; }
+        .plant-card-category {
+            display: inline-block; padding: 2px 8px;
+            border-radius: 8px; font-size: 0.7em; font-weight: 600;
+        }
+        .category-low { background: rgba(255,193,7,0.15); color: #ffc107; }
+        .category-medium { background: rgba(76,175,80,0.15); color: #81c784; }
+        .category-high { background: rgba(66,165,245,0.15); color: #42a5f5; }
+        .plant-card-moisture {
+            display: flex; align-items: center; gap: 8px;
+            margin: 8px 0; font-size: 0.85em;
+        }
+        .moisture-bar-bg {
+            flex: 1; height: 8px; background: rgba(255,255,255,0.1);
+            border-radius: 4px; position: relative; overflow: hidden;
+        }
+        .moisture-bar-fill {
+            position: absolute; height: 100%; border-radius: 4px;
+            background: linear-gradient(90deg, var(--yellow), var(--green), var(--blue));
+        }
+        .plant-card-tip {
+            font-size: 0.8em; color: var(--text-dim); margin-top: 6px;
+        }
+        .plant-card-custom-badge {
+            font-size: 0.7em; color: #ffc107; font-weight: 600;
+        }
+        .library-count {
+            color: var(--text-dim); font-size: 0.85em;
+        }
+        .add-plant-btn {
+            padding: 8px 16px; border-radius: 8px;
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            color: white; border: none; cursor: pointer;
+            font-size: 0.85em; font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .add-plant-btn:hover { opacity: 0.85; }
+
+        /* ===================== מודל הוספת צמח ===================== */
+        .add-plant-modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .add-plant-modal.show { display: flex; }
+        .add-plant-form {
+            background: var(--card); border-radius: 16px;
+            padding: 24px; max-width: 440px; width: 90%;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .add-plant-form h3 { margin-bottom: 16px; text-align: center; }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block; font-size: 0.85em;
+            color: var(--text-dim); margin-bottom: 4px;
+        }
+        .form-group input, .form-group select {
+            width: 100%; padding: 8px 12px;
+            background: var(--bg); color: var(--text);
+            border: 1px solid var(--card-border); border-radius: 8px;
+            font-size: 0.9em;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--accent);
+        }
+        .form-row {
+            display: flex; gap: 10px;
+        }
+        .form-row .form-group { flex: 1; }
+        .form-actions {
+            display: flex; gap: 10px; margin-top: 16px;
+        }
+        .form-actions button {
+            flex: 1; padding: 10px; border-radius: 8px;
+            font-size: 0.9em; cursor: pointer; font-weight: 600;
+        }
+        .btn-save {
+            background: var(--accent); color: white; border: none;
+        }
+        .btn-save:hover { opacity: 0.85; }
+        .btn-cancel {
+            background: rgba(255,255,255,0.1); color: var(--text);
+            border: 1px solid var(--card-border);
+        }
+
         .footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.85em; }
 
         @media (max-width: 768px) {
@@ -390,8 +571,88 @@
     </div>
 </div>
 
+    <!-- ספריית צמחים -->
+    <div class="section">
+        <div class="section-header">
+            <h2>📚 ספריית צמחים</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span class="library-count" id="libraryCount"></span>
+                <button class="add-plant-btn" onclick="openAddPlantModal()">+ הוסף צמח</button>
+            </div>
+        </div>
+        <div class="library-search">
+            <input type="text" id="librarySearch" placeholder="חפש צמח לפי שם..."
+                   oninput="filterLibrary()">
+            <div class="library-filter-btns">
+                <button class="filter-btn active" onclick="setLibraryFilter('all', this)">הכל</button>
+                <button class="filter-btn" onclick="setLibraryFilter('low', this)">🌵 מעט מים</button>
+                <button class="filter-btn" onclick="setLibraryFilter('medium', this)">🌿 בינוני</button>
+                <button class="filter-btn" onclick="setLibraryFilter('high', this)">💧 הרבה מים</button>
+                <button class="filter-btn" onclick="setLibraryFilter('custom', this)">⭐ מותאמים</button>
+            </div>
+        </div>
+        <div class="plant-library-grid" id="plantLibraryGrid">
+        </div>
+    </div>
+</div>
+
+<!-- מודל זיהוי צמח -->
+<div class="identify-modal" id="identifyModal">
+    <div class="identify-content">
+        <h3>🔍 זיהוי צמח מתמונה</h3>
+        <div id="identifyBody">
+            <div class="identify-loading">מזהה את הצמח...</div>
+        </div>
+        <button class="identify-close" onclick="closeIdentifyModal()">סגור</button>
+    </div>
+</div>
+
+<!-- מודל הוספת צמח חדש -->
+<div class="add-plant-modal" id="addPlantModal">
+    <div class="add-plant-form">
+        <h3>🌱 הוספת צמח חדש למאגר</h3>
+        <div class="form-group">
+            <label>שם בעברית *</label>
+            <input type="text" id="newPlantNameHe" placeholder="לדוגמה: פיקוס מיוחד">
+        </div>
+        <div class="form-group">
+            <label>שם באנגלית</label>
+            <input type="text" id="newPlantNameEn" placeholder="e.g. Special Ficus">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>לחות מינימלית (%)</label>
+                <input type="number" id="newPlantMoistureMin" min="0" max="100" value="30">
+            </div>
+            <div class="form-group">
+                <label>לחות מקסימלית (%)</label>
+                <input type="number" id="newPlantMoistureMax" min="0" max="100" value="70">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>טמפרטורה מינימלית (°C)</label>
+                <input type="number" id="newPlantTempMin" min="-10" max="50" value="15">
+            </div>
+            <div class="form-group">
+                <label>טמפרטורה מקסימלית (°C)</label>
+                <input type="number" id="newPlantTempMax" min="-10" max="50" value="30">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>טיפ השקיה</label>
+            <input type="text" id="newPlantTip" placeholder="לדוגמה: השקה כשהקרקע יבשה">
+        </div>
+        <input type="hidden" id="newPlantDeviceId" value="">
+        <div class="form-actions">
+            <button class="btn-save" onclick="saveNewPlant()">💾 שמור</button>
+            <button class="btn-cancel" onclick="closeAddPlantModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+
 <div class="footer">
-    Plant Monitor v1.1 | ESP32 + Capacitive Soil Moisture Sensor
+    Plant Monitor v1.2 | ESP32 + Capacitive Soil Moisture Sensor
 </div>
 
 <script>
@@ -528,6 +789,12 @@
                                    onblur="setTimeout(()=>closePlantSearch(this), 200)">
                             <div class="plant-search-results" id="plantResults_${device.device_id}"></div>
                         </div>
+                        <button class="camera-btn" onclick="openCamera(${device.device_id})">
+                            📷 זהה צמח מתמונה
+                        </button>
+                        <input type="file" class="camera-input" id="cameraInput_${device.device_id}"
+                               accept="image/*" capture="environment"
+                               onchange="identifyFromPhoto(${device.device_id}, this)">
                     </div>
 
                     <div class="interval-control" onclick="event.stopPropagation()">
@@ -715,6 +982,83 @@
         }
     }
 
+    // ===================== זיהוי צמח מתמונה =====================
+    let identifyDeviceId = null;
+
+    function openCamera(deviceId) {
+        identifyDeviceId = deviceId;
+        document.getElementById(`cameraInput_${deviceId}`).click();
+    }
+
+    async function identifyFromPhoto(deviceId, input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const modal = document.getElementById('identifyModal');
+        const body = document.getElementById('identifyBody');
+
+        modal.classList.add('show');
+        body.innerHTML = '<div class="identify-loading">📷 מזהה את הצמח... אנא המתן</div>';
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const res = await fetch(`${API_BASE}/api/identify`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.error && !data.suggestions) {
+                body.innerHTML = `<div class="identify-loading">❌ ${data.error}</div>`;
+                return;
+            }
+
+            if (!data.suggestions || data.suggestions.length === 0) {
+                body.innerHTML = '<div class="identify-loading">🤷 לא הצלחתי לזהות את הצמח. נסה תמונה ברורה יותר של העלים.</div>';
+                return;
+            }
+
+            body.innerHTML = data.suggestions.map((s, i) => {
+                const scoreColor = s.score > 50 ? '#4caf50' : s.score > 20 ? '#ffc107' : '#f44336';
+                const commonStr = s.common_names.length > 0 ? s.common_names.slice(0, 3).join(', ') : '';
+                const matchHtml = s.local_match
+                    ? `<div class="result-match">✅ נמצא במאגר: ${s.local_match.name_he} | לחות: ${s.local_match.moisture_min}%-${s.local_match.moisture_max}%</div>`
+                    : '<div class="result-match" style="color:#ffc107">➕ לא נמצא במאגר - לחץ להוספה</div>';
+
+                return `
+                    <div class="identify-result" onclick="applyIdentifiedPlant(${deviceId}, ${JSON.stringify(s.local_match).replace(/"/g, '&quot;')})">
+                        <div class="result-name">${s.scientific_name}</div>
+                        ${commonStr ? `<div class="result-common">${commonStr}</div>` : ''}
+                        <span class="result-score" style="background:${scoreColor}22; color:${scoreColor}">התאמה: ${s.score}%</span>
+                        ${matchHtml}
+                    </div>`;
+            }).join('');
+
+        } catch (err) {
+            body.innerHTML = `<div class="identify-loading">❌ שגיאה: ${err.message}</div>`;
+        }
+
+        input.value = '';  // איפוס כדי שיעבוד שוב
+    }
+
+    async function applyIdentifiedPlant(deviceId, localMatch) {
+        if (!localMatch) {
+            alert('הצמח לא נמצא במאגר המקומי. בחר צמח ידנית מהחיפוש.');
+            closeIdentifyModal();
+            return;
+        }
+
+        await selectPlant(deviceId, localMatch.id);
+        closeIdentifyModal();
+    }
+
+    function closeIdentifyModal() {
+        document.getElementById('identifyModal').classList.remove('show');
+    }
+
     // ===================== Helpers =====================
     function getMoistureColor(value) {
         if (value === '--' || value === null) return '#7a8f9f';
@@ -747,6 +1091,185 @@
         if (seconds < 86400) return `לפני ${Math.floor(seconds / 3600)} שעות`;
         return `לפני ${Math.floor(seconds / 86400)} ימים`;
     }
+
+    // ===================== ספריית צמחים =====================
+    let libraryFilter = 'all';
+
+    function renderPlantLibrary() {
+        const grid = document.getElementById('plantLibraryGrid');
+        const searchQuery = (document.getElementById('librarySearch')?.value || '').trim().toLowerCase();
+
+        let filtered = plantTypes;
+
+        // סינון לפי חיפוש
+        if (searchQuery) {
+            filtered = filtered.filter(p =>
+                p.name_he.toLowerCase().includes(searchQuery) ||
+                p.name_en.toLowerCase().includes(searchQuery) ||
+                p.id.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        // סינון לפי קטגוריה
+        if (libraryFilter === 'custom') {
+            filtered = filtered.filter(p => p.custom);
+        } else if (libraryFilter !== 'all') {
+            filtered = filtered.filter(p => p.category === libraryFilter);
+        }
+
+        document.getElementById('libraryCount').textContent = `${filtered.length} מתוך ${plantTypes.length} צמחים`;
+
+        if (filtered.length === 0) {
+            grid.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-dim); grid-column:1/-1;">לא נמצאו צמחים</div>';
+            return;
+        }
+
+        grid.innerHTML = filtered.map(p => {
+            const catLabel = p.category === 'low' ? '🌵 מעט' : p.category === 'high' ? '💧 הרבה' : '🌿 בינוני';
+            const catClass = `category-${p.category}`;
+            const isCustom = p.custom;
+
+            return `
+                <div class="plant-library-card ${isCustom ? 'custom-plant' : ''}">
+                    <div class="plant-card-header">
+                        <div>
+                            <div class="plant-card-name">${p.name_he}</div>
+                            <div class="plant-card-name-en">${p.name_en}</div>
+                            ${isCustom ? '<span class="plant-card-custom-badge">⭐ מותאם אישית</span>' : ''}
+                        </div>
+                        <span class="plant-card-category ${catClass}">${catLabel}</span>
+                    </div>
+                    <div class="plant-card-moisture">
+                        <span>💧</span>
+                        <div class="moisture-bar-bg">
+                            <div class="moisture-bar-fill" style="left:${p.moisture_min}%; width:${p.moisture_max - p.moisture_min}%"></div>
+                        </div>
+                        <span style="font-weight:600; white-space:nowrap;">${p.moisture_min}%-${p.moisture_max}%</span>
+                    </div>
+                    ${p.water_tip_he ? `<div class="plant-card-tip">💡 ${p.water_tip_he}</div>` : ''}
+                </div>`;
+        }).join('');
+    }
+
+    function filterLibrary() {
+        renderPlantLibrary();
+    }
+
+    function setLibraryFilter(filter, btn) {
+        libraryFilter = filter;
+        document.querySelectorAll('.library-filter-btns .filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderPlantLibrary();
+    }
+
+    // ===================== הוספת צמח חדש =====================
+    let addPlantForDeviceId = null;
+
+    function openAddPlantModal(deviceId, prefillData) {
+        addPlantForDeviceId = deviceId || null;
+        document.getElementById('newPlantDeviceId').value = deviceId || '';
+
+        // ניקוי שדות
+        document.getElementById('newPlantNameHe').value = '';
+        document.getElementById('newPlantNameEn').value = '';
+        document.getElementById('newPlantMoistureMin').value = '30';
+        document.getElementById('newPlantMoistureMax').value = '70';
+        document.getElementById('newPlantTempMin').value = '15';
+        document.getElementById('newPlantTempMax').value = '30';
+        document.getElementById('newPlantTip').value = '';
+
+        // מילוי מראש אם יש נתונים (מזיהוי)
+        if (prefillData) {
+            if (prefillData.name_en) document.getElementById('newPlantNameEn').value = prefillData.name_en;
+            if (prefillData.name_he) document.getElementById('newPlantNameHe').value = prefillData.name_he;
+        }
+
+        document.getElementById('addPlantModal').classList.add('show');
+    }
+
+    function closeAddPlantModal() {
+        document.getElementById('addPlantModal').classList.remove('show');
+        addPlantForDeviceId = null;
+    }
+
+    async function saveNewPlant() {
+        const nameHe = document.getElementById('newPlantNameHe').value.trim();
+        const nameEn = document.getElementById('newPlantNameEn').value.trim();
+
+        if (!nameHe && !nameEn) {
+            alert('יש להזין שם לצמח');
+            return;
+        }
+
+        const plantData = {
+            name_he: nameHe,
+            name_en: nameEn,
+            moisture_min: parseInt(document.getElementById('newPlantMoistureMin').value) || 30,
+            moisture_max: parseInt(document.getElementById('newPlantMoistureMax').value) || 70,
+            temp_min: parseInt(document.getElementById('newPlantTempMin').value) || 15,
+            temp_max: parseInt(document.getElementById('newPlantTempMax').value) || 30,
+            water_tip_he: document.getElementById('newPlantTip').value.trim(),
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/api/plants/custom`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(plantData)
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                alert(result.error || 'שגיאה בהוספת הצמח');
+                return;
+            }
+
+            // רענון רשימת הצמחים
+            await fetchPlantTypes();
+            renderPlantLibrary();
+
+            // אם הוספנו עבור מכשיר ספציפי - בחר את הצמח
+            const deviceId = document.getElementById('newPlantDeviceId').value;
+            if (deviceId && result.plant) {
+                await selectPlant(parseInt(deviceId), result.plant.id);
+            }
+
+            closeAddPlantModal();
+
+        } catch (err) {
+            alert('שגיאה: ' + err.message);
+        }
+    }
+
+    // עדכון פונקציית הזיהוי - כשצמח לא במאגר, מציע להוסיף
+    const _origApplyIdentifiedPlant = applyIdentifiedPlant;
+    applyIdentifiedPlant = async function(deviceId, localMatch) {
+        if (!localMatch) {
+            // הצמח לא נמצא במאגר - פתח מודל הוספה עם הנתונים שזוהו
+            closeIdentifyModal();
+            // מצא את הנתונים מהתוצאה (שם מדעי)
+            const resultElements = document.querySelectorAll('.identify-result');
+            let prefill = {};
+            resultElements.forEach(el => {
+                const nameEl = el.querySelector('.result-name');
+                const commonEl = el.querySelector('.result-common');
+                if (nameEl) prefill.name_en = nameEl.textContent;
+                if (commonEl) prefill.name_he = commonEl.textContent.split(',')[0].trim();
+            });
+            openAddPlantModal(deviceId, prefill);
+            return;
+        }
+        await selectPlant(deviceId, localMatch.id);
+        closeIdentifyModal();
+    };
+
+    // רענון הספרייה אחרי טעינת הצמחים
+    const _origFetchPlantTypes = fetchPlantTypes;
+    fetchPlantTypes = async function() {
+        await _origFetchPlantTypes();
+        renderPlantLibrary();
+    };
 </script>
 
 </body>
